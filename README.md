@@ -37,4 +37,3 @@ fukue20190820 = block_no %>%
 fukue20190820 %>% unnest(data)
 ```
 
-`prec_no = read_csv("list_of_prec_no.csv")`
