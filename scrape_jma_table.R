@@ -22,7 +22,6 @@ check_bad_data = function(x) {
 }
 
 get_hpa = function(year, month, day, prefecture = 84, site = 47817, kubun = "s") {
-  kubun = ifelse(site < 10000, "a", "s")
   wind_pattern = c("北"="N", "南" = "S", "東" = "E", "西" = "W")
   URL = paste("http://www.data.jma.go.jp/obd/stats/etrn/view/10min_",
               kubun, "1.php?",
@@ -57,23 +56,3 @@ get_hpa = function(year, month, day, prefecture = 84, site = 47817, kubun = "s")
     mutate_at(vars(contains("direction")), ~str_replace_all(., wind_pattern)) %>%
     mutate(datetime = ymd_hm(str_glue("{year}-{month}-{day} {datetime}")))
 }
-
-#
-prec_no = read_csv("list_of_prec_no.csv")
-block_no = scrape_block_no()
-block_no %>% print(n = Inf)
-
-fukue20190820 = block_no %>%
-  filter(str_detect(block, "福江")) %>%
-  mutate(year = 2019, month = 8, day = 20) %>%
-  mutate(data = pmap(list(year, month, day, prec_no, block_no, kubun), get_hpa)) %>%
-  select(block, data)
-
-fukue20190820 %>% unnest(data)
-
-
-
-
-
-
-
