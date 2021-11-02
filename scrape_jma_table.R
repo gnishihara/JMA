@@ -32,6 +32,7 @@ get_hpa = function(year, month, day, prefecture = 84, site = 47817, kubun = "s")
               "&day=", day,
               "&view=p3",sep="")
   out = read_html(URL)
+  # Sys.sleep(5)
   out = out %>% html_nodes(xpath = '//*[@id="tablefix1"]')
   check_validity = out %>% html_name() %>% length()
   if(check_validity == 0) stop("Site and prefecture does not match.")

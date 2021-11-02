@@ -34,7 +34,7 @@ scrape_block_no = function(prec_no=84) {
   df = out %>% html_children()
 
   df %>%
-    map(xml_attrs) %>%
+    map(xml2::xml_attrs) %>%
     map_df(~as.list(.)) %>%
     select(alt, href, onmouseover) %>%
     mutate(site = str_extract(href, "block_no=[0-9]+")) %>%
