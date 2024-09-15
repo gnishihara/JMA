@@ -1,12 +1,14 @@
 # Reading meteorological data from the kishocho site.
 # Greg Nishihara
 # 2019 Oct 30
+# updated 2022 Feb 2 to include the polite package.
 # 参考URL:
 # https://www.r-bloggers.com/using-rvest-to-scrape-an-html-table/
 # https://codeday.me/jp/qa/20190408/516767.html
 
 # Packages and sourced files -----------------------------------------
 library(tidyverse)
+library(polite)
 library(rvest)
 library(lubridate)
 source("prec_and_block.R")
@@ -20,19 +22,26 @@ check_bad_data = function(x) {
   x[y>0] = NA
   x
 }
+year = 2023
+month = 7
+day = 19
+prefecture = 84
+site = 47843
+kubun = "s"
 
-get_hpa = function(year, month, day, prefecture = 84, site = 47817, kubun = "s") {
+get_hpa = function(year, month, day, prefecture = 84, site = 47843, kubun = "s") {
   wind_pattern = c("北"="N", "南" = "S", "東" = "E", "西" = "W")
   URL = paste("http://www.data.jma.go.jp/obd/stats/etrn/view/10min_",
-              kubun, "1.php?",
+              kubun,
+              "1.php?",
               "prec_no=", prefecture,
               "&block_no=", site,
               "&year=", year,
               "&month=", month,
               "&day=", day,
-              "&view=p3",sep="")
-  out = read_html(URL)
-  # Sys.sleep(5)
+              "&view=",sep="")
+  session = bow(URL, force = TRUE)
+  out = scrape(session)
   out = out %>% html_nodes(xpath = '//*[@id="tablefix1"]')
   check_validity = out %>% html_name() %>% length()
   if(check_validity == 0) stop("Site and prefecture does not match.")
@@ -57,3 +66,29 @@ get_hpa = function(year, month, day, prefecture = 84, site = 47817, kubun = "s")
     mutate_at(vars(contains("direction")), ~str_replace_all(., wind_pattern)) %>%
     mutate(datetime = ymd_hm(str_glue("{year}-{month}-{day} {datetime}")))
 }
+
+
+build_month = function(df, test = NULL) {
+  y = df$year
+  m = df$month
+  thismonth = today() |> month()
+  thisyear = today() |> year()
+  if(near(thisyear, y) & near(thismonth, m)) {stop("Data was downloaded.")}
+  if(!is.null(test)) {thismonth = test}
+  y = y:thisyear
+  N = length(y)
+  if(N > 2) {
+    middlevalues = replicate(N - 2, 1:12, simplify = FALSE)
+    z = c(list(m:12), middlevalues, list(1:(thismonth-1)))
+  }  else if(N <= 2 & N > 1) {
+    z = list(m:12, 1:(thismonth-1))
+  } else if(near(N, 1)) {
+    if(m < thismonth) {
+      z = list(m:(thismonth-1))
+    } else {
+      z = list(1:(thismonth-1))
+    }
+  }
+  bind_cols(df |> select(-year, -month), tibble(year = y, month = z)) |> unnest(month)
+}
+bm = possibly(build_month, otherwise = NULL, quiet = FALSE)
