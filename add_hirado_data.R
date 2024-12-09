@@ -1,17 +1,17 @@
-# Arikawa Data
+# Hirado City Data
 library(tidyverse)
 library(rvest) # HTMLの読み込みに必要
 library(lubridate)
 source("prec_and_block.R")
 source("scrape_jma_table.R")
 library(furrr)
-plan(multisession(workers = 7))
+plan(multisession(workers = 16))
 
 prec_no = read_csv("list_of_prec_no.csv")
 block_no = scrape_block_no(prec_no = 84)
-bn = block_no %>% filter(str_detect(block, "有川")) |>
-  filter(str_detect(block_no, "1138"))
-
+bn =　
+  block_no |>
+  filter(str_detect(block, "平戸"))
 ############################################################
 basetibble = tibble(
   prec_no = bn$prec_no,
@@ -19,7 +19,7 @@ basetibble = tibble(
   kubun = bn$kubun
 )
 
-fname = "arikawa_jma_dataset.rds"
+fname = "hirado_jma_dataset.rds"
 
 if (file.exists(fname)) {
   dout0 = read_rds(fname)
@@ -30,7 +30,8 @@ if (file.exists(fname)) {
 } else {
   start_date = ymd("2017-01-01")
 }
-  end_date = today() - days(1)
+
+end_date = today() - days(1)
 
 datetime_sequence = seq(start_date, end_date, by = "days")
 

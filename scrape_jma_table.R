@@ -45,13 +45,15 @@ get_hpa = function(year, month, day, prefecture = 84, site = 47843, kubun = "s")
   out = out %>% html_nodes(xpath = '//*[@id="tablefix1"]')
   check_validity = out %>% html_name() %>% length()
   if(check_validity == 0) stop("Site and prefecture does not match.")
+
   df = out %>% html_nodes(xpath = '//*[@id="tablefix1"]') %>%
     html_table(fill = TRUE) %>% magrittr::extract2(1)
 
   windn = names(df[-1, ]) %>% str_detect("風向・風速") %>% which()
   hpan  = names(df[-1, ]) %>% str_detect("気圧") %>% which()
 
-  df[-1, ] %>% as_tibble(.name_repair="universal") %>%
+  df[-1, ] %>%
+    as_tibble(.name_repair="unique_quiet") %>%
     select(datetime = contains("時分"),
            hpa = matches(paste0("^気.*", hpan[2])),
            rain = contains("降水量"),
@@ -59,12 +61,16 @@ get_hpa = function(year, month, day, prefecture = 84, site = 47843, kubun = "s")
            wind = matches(paste0("^風.*",windn[1])),
            gust = matches(paste0("^風.*",windn[3])),
            wind_direction = matches(paste0("^風.*",windn[2])),
-           gust_direction = matches(paste0("^風.*",windn[4])),) %>%
+           gust_direction = matches(paste0("^風.*",windn[4]))
+           ) %>%
     mutate_all(~check_bad_data(.)) %>%
-    mutate_at(vars(-contains("direction"), -datetime), ~str_extract(., "[0-9]+\\.[0-9]+")) %>%
+    mutate_at(vars(-contains("direction"), -datetime),
+              ~str_extract(., "[0-9]+\\.[0-9]+")) %>%
     mutate_at(vars(-contains("direction"), -datetime), as.numeric) %>%
-    mutate_at(vars(contains("direction")), ~str_replace_all(., wind_pattern)) %>%
-    mutate(datetime = ymd_hm(str_glue("{year}-{month}-{day} {datetime}")))
+    mutate_at(vars(contains("direction")),
+              ~str_replace_all(., wind_pattern)) %>%
+    mutate(datetime = ymd_hm(str_glue("{year}-{month}-{day} {datetime}"))) |>
+    drop_na(datetime)
 }
 
 

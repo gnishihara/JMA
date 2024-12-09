@@ -11,27 +11,58 @@ prec_no = read_csv("list_of_prec_no.csv")
 block_no = scrape_block_no(prec_no = 84)
 bn = block_no %>% filter(str_detect(block, "福江"))
 
-################################################################################
-basetibble = tibble(prec_no = bn$prec_no, block_no = bn$block_no, kubun = bn$kubun)
-dout0 = read_rds("fukue_jma_dataset.rds")
-start_date = dout0 |> last() |> pull(datetime) |> floor_date("months")
-end_date = today()-days(1)
-print(end_date)
+############################################################
+basetibble = tibble(
+  prec_no = bn$prec_no,
+  block_no = bn$block_no,
+  kubun = bn$kubun
+)
 
-dout = tibble(prec_no = bn$prec_no, block_no = bn$block_no, kubun = bn$kubun,
-              datetime = seq(start_date, as_datetime(end_date), by = "days")) |>
-  mutate(data = future_pmap(list(year(datetime), month(datetime), day(datetime), prec_no, block_no, kubun), get_hpa))
+fname = "fukue_jma_dataset.rds"
 
-dout |> tail()
+if (file.exists(fname)) {
+  dout0 = read_rds(fname)
+  dout0 = dout0 |> drop_na(datetime)
+  start_date = dout0 |> last() |> pull(datetime) |> floor_date("months")
+  outname = str_c("hirado_jma_dataset_until_", start_date, ".rds")
+  file.copy(fname, outname)
+} else {
+  start_date = ymd("2017-01-01")
+}
+  end_date = today() - days(1)
 
-file.copy("fukue_jma_dataset.rds", str_c("fukue_jma_dataset_until_", start_date, ".rds"))
+datetime_sequence = seq(start_date, end_date, by = "days")
 
-dout0 |>
-  filter(datetime < start_date) |>
-  bind_rows(dout) |>
-  write_rds("fukue_jma_dataset.rds")
+dout = tibble(
+  prec_no = bn$prec_no,
+  block_no = bn$block_no,
+  kubun = bn$kubun,
+  datetime = datetime_sequence
+)
 
-file.copy("fukue_jma_dataset.rds",
-          "~/Lab_Data/weather/fukue_jma_dataset.rds",
-          overwrite = TRUE)
+dout = dout |>
+  mutate(data = future_pmap(list(
+    year(datetime),
+    month(datetime),
+    day(datetime),
+    prec_no,
+    block_no,
+    kubun
+  ), get_hpa))
 
+if (any(grepl("^dout0$", ls()))) {
+  dout0 |>
+    filter(datetime < start_date) |>
+    bind_rows(dout) |>
+    distinct() |>
+    write_rds(fname)
+} else {
+  dout |>
+    distinct() |>
+    write_rds(fname)
+}
+
+outfile = str_c("~/Lab_Data/weather/", fname)
+file.copy(fname, outfile, overwrite = TRUE)
+sprintf("Added data from %s to %s to %s",
+        start_date, end_date, fname)

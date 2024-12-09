@@ -1,16 +1,16 @@
-# Arikawa Data
+# Nagasaki City Data
 library(tidyverse)
 library(rvest) # HTMLの読み込みに必要
 library(lubridate)
 source("prec_and_block.R")
 source("scrape_jma_table.R")
 library(furrr)
-plan(multisession(workers = 7))
+plan(multisession(workers = 16))
 
 prec_no = read_csv("list_of_prec_no.csv")
 block_no = scrape_block_no(prec_no = 84)
-bn = block_no %>% filter(str_detect(block, "有川")) |>
-  filter(str_detect(block_no, "1138"))
+bn = block_no %>% filter(str_detect(block, "長崎")) |>
+  filter(str_detect(block_no, "47817"))
 
 ############################################################
 basetibble = tibble(
@@ -19,7 +19,7 @@ basetibble = tibble(
   kubun = bn$kubun
 )
 
-fname = "arikawa_jma_dataset.rds"
+fname = "nagasakishi_jma_dataset.rds"
 
 if (file.exists(fname)) {
   dout0 = read_rds(fname)
