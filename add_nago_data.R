@@ -1,4 +1,4 @@
-# Arikawa Data
+# Nagasaki City Data
 library(tidyverse)
 library(rvest) # HTMLの読み込みに必要
 library(lubridate)
@@ -6,9 +6,8 @@ source("prec_and_block.R")
 source("scrape_jma_table.R")
 
 prec_no = read_csv("list_of_prec_no.csv")
-block_no = scrape_block_no(prec_no = 84)
-bn = block_no %>% filter(str_detect(block, "有川")) |>
-  filter(str_detect(block_no, "1138"))
+block_no = scrape_block_no(prec_no = 91)
+bn = block_no %>% filter(str_detect(block, "名護"))
 
 ############################################################
 basetibble = tibble(
@@ -17,18 +16,20 @@ basetibble = tibble(
   kubun = bn$kubun
 )
 
-fname = "arikawa_jma_dataset.rds"
+fname = "nago_jma_dataset.rds"
 
 if (file.exists(fname)) {
   dout0 = read_rds(fname)
   dout0 = dout0 |> drop_na(datetime)
   start_date = dout0 |> last() |> pull(datetime) |> floor_date("months")
-  outname = str_c("arikawa_jma_dataset_until_", start_date, ".rds")
+  outname = str_c("nago_jma_dataset_until_", start_date, ".rds")
   file.copy(fname, outname)
 } else {
-  start_date = ymd("2017-01-01")
+  start_date = ymd("2020-10-01")
 }
 end_date = today() - days(1)
+end_date = ymd("2021-04-30")
+
 
 datetime_sequence = seq(start_date, end_date, by = "days")
 

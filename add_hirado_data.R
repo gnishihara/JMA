@@ -4,8 +4,6 @@ library(rvest) # HTMLの読み込みに必要
 library(lubridate)
 source("prec_and_block.R")
 source("scrape_jma_table.R")
-library(furrr)
-plan(multisession(workers = 16))
 
 prec_no = read_csv("list_of_prec_no.csv")
 block_no = scrape_block_no(prec_no = 84)
@@ -20,7 +18,7 @@ basetibble = tibble(
 )
 
 fname = "hirado_jma_dataset.rds"
-
+file.exists(fname)
 if (file.exists(fname)) {
   dout0 = read_rds(fname)
   dout0 = dout0 |> drop_na(datetime)
@@ -43,7 +41,7 @@ dout = tibble(
 )
 
 dout = dout |>
-  mutate(data = future_pmap(list(
+  mutate(data = pmap(list(
     year(datetime),
     month(datetime),
     day(datetime),

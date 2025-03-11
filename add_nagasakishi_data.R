@@ -4,8 +4,6 @@ library(rvest) # HTMLの読み込みに必要
 library(lubridate)
 source("prec_and_block.R")
 source("scrape_jma_table.R")
-library(furrr)
-plan(multisession(workers = 16))
 
 prec_no = read_csv("list_of_prec_no.csv")
 block_no = scrape_block_no(prec_no = 84)
@@ -25,12 +23,12 @@ if (file.exists(fname)) {
   dout0 = read_rds(fname)
   dout0 = dout0 |> drop_na(datetime)
   start_date = dout0 |> last() |> pull(datetime) |> floor_date("months")
-  outname = str_c("hirado_jma_dataset_until_", start_date, ".rds")
+  outname = str_c("nagasakishi_jma_dataset_until_", start_date, ".rds")
   file.copy(fname, outname)
 } else {
   start_date = ymd("2017-01-01")
 }
-  end_date = today() - days(1)
+end_date = today() - days(1)
 
 datetime_sequence = seq(start_date, end_date, by = "days")
 
@@ -42,7 +40,7 @@ dout = tibble(
 )
 
 dout = dout |>
-  mutate(data = future_pmap(list(
+  mutate(data = pmap(list(
     year(datetime),
     month(datetime),
     day(datetime),
